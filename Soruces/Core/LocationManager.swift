@@ -10,7 +10,7 @@ import CoreLocation
 
 class LocationManager: NSObject, CLLocationManagerDelegate {
     static let shared = LocationManager()
-    private let locationManager = CLLocationManager()
+    let locationManager = CLLocationManager() // TODO: Check access level is ok
     
     var onLocationUpdate: ((CLLocation) -> Void)?
     var onHeadingUpdate: ((CLHeading) -> Void)?

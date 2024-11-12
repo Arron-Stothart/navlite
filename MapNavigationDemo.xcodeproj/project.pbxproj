@@ -13,6 +13,7 @@
 		6B27794D2CE38966003C11D8 /* MapNavigationDemo.h in Headers */ = {isa = PBXBuildFile; fileRef = 6B27793F2CE38966003C11D8 /* MapNavigationDemo.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		6B6477672CE38B4F000FEEB9 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6477662CE38B4F000FEEB9 /* LocationManager.swift */; };
 		6B6477692CE38C52000FEEB9 /* MapCameraManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B6477682CE38C52000FEEB9 /* MapCameraManager.swift */; };
+		6B64776B2CE38DF1000FEEB9 /* NavigationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B64776A2CE38DF1000FEEB9 /* NavigationViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +34,7 @@
 		6B27794B2CE38966003C11D8 /* MapNavigationDemoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapNavigationDemoTests.swift; sourceTree = "<group>"; };
 		6B6477662CE38B4F000FEEB9 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		6B6477682CE38C52000FEEB9 /* MapCameraManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapCameraManager.swift; sourceTree = "<group>"; };
+		6B64776A2CE38DF1000FEEB9 /* NavigationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +105,7 @@
 		6B6477632CE38ACA000FEEB9 /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				6B64776A2CE38DF1000FEEB9 /* NavigationViewController.swift */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -232,6 +235,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6B64776B2CE38DF1000FEEB9 /* NavigationViewController.swift in Sources */,
 				6B6477672CE38B4F000FEEB9 /* LocationManager.swift in Sources */,
 				6B2779412CE38966003C11D8 /* MapNavigationDemo.docc in Sources */,
 				6B6477692CE38C52000FEEB9 /* MapCameraManager.swift in Sources */,

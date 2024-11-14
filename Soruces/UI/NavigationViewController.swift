@@ -208,10 +208,6 @@ class NavigationViewController: UIViewController {
             self?.navigationInstructionView.update(with: step)
         }
         
-        routeManager.onDistanceUpdated = { [weak self] distance in
-            self?.navigationInstructionView.updateDistance(distance)
-        }
-        
         routeManager.onRouteDeviation = { [weak self] in
             print("Rerouting...")
         }

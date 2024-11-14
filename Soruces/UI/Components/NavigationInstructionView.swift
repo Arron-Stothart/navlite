@@ -40,6 +40,15 @@ class NavigationInstructionView: UIView {
         return label
     }()
     
+    private let remainingInfoLabel: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.85)
+        label.font = .systemFont(ofSize: 15, weight: .medium)
+        label.textAlignment = .left
+        label.numberOfLines = 1
+        return label
+    }()
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupViews()
@@ -54,11 +63,13 @@ class NavigationInstructionView: UIView {
         containerView.addSubview(instructionImageView)
         containerView.addSubview(distanceLabel)
         containerView.addSubview(streetNameLabel)
+        containerView.addSubview(remainingInfoLabel)
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         instructionImageView.translatesAutoresizingMaskIntoConstraints = false
         distanceLabel.translatesAutoresizingMaskIntoConstraints = false
         streetNameLabel.translatesAutoresizingMaskIntoConstraints = false
+        remainingInfoLabel.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: topAnchor),
@@ -76,33 +87,68 @@ class NavigationInstructionView: UIView {
             distanceLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             
             streetNameLabel.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),
-            streetNameLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: 4),
-            streetNameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+            streetNameLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: -4),
+            streetNameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            
+            remainingInfoLabel.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),
+            remainingInfoLabel.topAnchor.constraint(equalTo: streetNameLabel.bottomAnchor, constant: 4),
+            remainingInfoLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
         ])
     }
     
     func update(with step: RouteManager.NavigationStep) {
-        instructionImageView.image = iconFor(step: step)?.withRenderingMode(.alwaysTemplate)
-        updateDistance(step.distance)
-        
-        let components = step.instruction.components(separatedBy: " onto ")
-        if components.count > 1 {
-            streetNameLabel.text = components[1]
-        } else {
-            streetNameLabel.text = step.instruction
+        // Smoothly animate the distance change
+        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveLinear, .beginFromCurrentState]) {
+            self.updateDistance(step.distance)
+            
+            let components = step.instruction.components(separatedBy: " onto ")
+            if components.count > 1 {
+                self.streetNameLabel.text = components[1]
+            } else {
+                self.streetNameLabel.text = step.instruction
+            }
+            
+            let remainingDistance = self.formatDistance(step.remainingDistance)
+            let remainingTime = self.formatTime(step.remainingTime)
+            self.remainingInfoLabel.text = "\(remainingTime) (\(remainingDistance) remaining)"
         }
     }
     
-    func updateDistance(_ distance: CLLocationDistance) {
+    private func updateDistance(_ distance: CLLocationDistance) {
+        let text: String
         if distance < 1000 {
-            distanceLabel.text = "\(Int(distance))m"
+            text = "\(Int(distance))m"
         } else {
-            distanceLabel.text = String(format: "%.1f km", distance/1000)
+            text = String(format: "%.1f km", distance/1000)
+        }
+        
+        // Only update if text actually changed to prevent label flicker
+        if distanceLabel.text != text {
+            distanceLabel.text = text
         }
     }
     
     private func iconFor(step: RouteManager.NavigationStep) -> UIImage? {
         // Implement your logic to determine the appropriate icon based on the step
         return nil
+    }
+    
+    private func formatDistance(_ distance: CLLocationDistance) -> String {
+        if distance < 1000 {
+            return "\(Int(distance))m"
+        } else {
+            return String(format: "%.1f km", distance/1000)
+        }
+    }
+    
+    private func formatTime(_ timeInterval: TimeInterval) -> String {
+        let hours = Int(timeInterval) / 3600
+        let minutes = Int(timeInterval) / 60 % 60
+        
+        if hours > 0 {
+            return "\(hours)h \(minutes)min"
+        } else {
+            return "\(minutes)min"
+        }
     }
 }

@@ -22,6 +22,13 @@ class RouteManager: NSObject, MKMapViewDelegate {
     private var routeProgress: RouteProgress?
     private let routeCorridorWidth: Double = 25 // TODO: Tune
     
+    private var lastProgressUpdate = Date()
+    private let progressUpdateInterval: TimeInterval = 0.1 // Update every 100ms
+    
+    // New property to store live progress
+    private var liveProgress: LiveProgress?
+    private var displayLink: CADisplayLink?
+    
     struct NavigationStep {
         let instruction: String
         let notice: String?
@@ -62,11 +69,44 @@ class RouteManager: NSObject, MKMapViewDelegate {
         }
     }
     
+    struct LiveProgress {
+        var currentLocation: CLLocation
+        var distanceToNextStep: CLLocationDistance
+        var totalRemainingDistance: CLLocationDistance
+        var totalRemainingTime: TimeInterval
+        var currentStep: MKRoute.Step
+        var nextStep: MKRoute.Step?
+    }
+    
     init(mapView: MKMapView) {
        self.mapView = mapView
        super.init()
        self.mapView.delegate = self
+       setupDisplayLink()
    }
+    
+    private func setupDisplayLink() {
+        displayLink = CADisplayLink(target: self, selector: #selector(updateDisplay))
+        displayLink?.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 60)
+        displayLink?.add(to: .main, forMode: .common)
+    }
+    
+    @objc private func updateDisplay() {
+        guard let progress = liveProgress else { return }
+        
+        // Create navigation step with live data
+        let step = NavigationStep(
+            instruction: progress.currentStep.instructions,
+            notice: progress.currentStep.notice,
+            distance: progress.distanceToNextStep,
+            transportType: currentRoute?.transportType ?? .automobile,
+            eta: Date().addingTimeInterval(progress.totalRemainingTime),
+            remainingDistance: progress.totalRemainingDistance,
+            remainingTime: progress.totalRemainingTime
+        )
+        
+        onStepUpdated?(step)
+    }
     
     func calculateRoute(
         source: CLLocationCoordinate2D,
@@ -119,20 +159,9 @@ class RouteManager: NSObject, MKMapViewDelegate {
     
     func updateProgress(for location: CLLocation) {
         guard let route = currentRoute else { return }
-        guard let progress = routeProgress else {
-            // Initialise progress when starting navigation
-            routeProgress = RouteProgress(
-                route: route,
-                currentStepIndex: 0,
-                distanceRemaining: route.distance,
-                timeRemaining: route.expectedTravelTime
-            )
-            return
-        }
         
-        // Find closest point on route and check if within corridor
+        // Find closest point and check corridor
         let closestPoint = findClosestPoint(location: location, onRoute: route.polyline)
-        
         let distanceFromRoute = location.distance(from: CLLocation(
             latitude: closestPoint.coordinate.latitude,
             longitude: closestPoint.coordinate.longitude
@@ -143,8 +172,85 @@ class RouteManager: NSObject, MKMapViewDelegate {
             return
         }
         
-        updateCurrentStep(location: location, progress: &routeProgress!)
-        updateRemainingProgress(location: location, progress: &routeProgress!)
+        // Calculate all the live metrics
+        let (currentStepIndex, distanceToNext) = calculateStepProgress(location: location, route: route)
+        let (remainingDistance, remainingTime) = calculateRemainingProgress(
+            fromLocation: location,
+            startingAtStep: currentStepIndex,
+            route: route
+        )
+        
+        // Update live progress
+        liveProgress = LiveProgress(
+            currentLocation: location,
+            distanceToNextStep: distanceToNext,
+            totalRemainingDistance: remainingDistance,
+            totalRemainingTime: remainingTime,
+            currentStep: route.steps[currentStepIndex],
+            nextStep: currentStepIndex + 1 < route.steps.count ? route.steps[currentStepIndex + 1] : nil
+        )
+    }
+    
+    private func calculateStepProgress(location: CLLocation, route: MKRoute) -> (stepIndex: Int, distanceToNext: CLLocationDistance) {
+        // Find which step we're on and distance to next maneuver
+        var minDistance = Double.infinity
+        var currentStepIndex = 0
+        
+        for (index, step) in route.steps.enumerated() {
+            let stepPoints = Array(UnsafeBufferPointer(
+                start: step.polyline.points(),
+                count: step.polyline.pointCount
+            ))
+            
+            for point in stepPoints {
+                let distance = location.distance(from: CLLocation(
+                    latitude: point.coordinate.latitude,
+                    longitude: point.coordinate.longitude
+                ))
+                if distance < minDistance {
+                    minDistance = distance
+                    currentStepIndex = index
+                }
+            }
+        }
+        
+        // Calculate distance to next maneuver
+        let currentStep = route.steps[currentStepIndex]
+        let stepEndPoint = currentStep.polyline.points()[currentStep.polyline.pointCount - 1]
+        let distanceToNext = location.distance(from: CLLocation(
+            latitude: stepEndPoint.coordinate.latitude,
+            longitude: stepEndPoint.coordinate.longitude
+        ))
+        
+        return (currentStepIndex, distanceToNext)
+    }
+    
+    private func calculateRemainingProgress(
+        fromLocation location: CLLocation,
+        startingAtStep stepIndex: Int,
+        route: MKRoute
+    ) -> (distance: CLLocationDistance, time: TimeInterval) {
+        var remainingDistance: CLLocationDistance = 0
+        
+        // Calculate remaining distance for all future steps
+        for (index, step) in route.steps.enumerated() where index >= stepIndex {
+            if index == stepIndex {
+                // For current step, calculate from current location
+                let stepEndPoint = step.polyline.points()[step.polyline.pointCount - 1]
+                remainingDistance += location.distance(from: CLLocation(
+                    latitude: stepEndPoint.coordinate.latitude,
+                    longitude: stepEndPoint.coordinate.longitude
+                ))
+            } else {
+                // For future steps, use full distance
+                remainingDistance += step.distance
+            }
+        }
+        
+        // Calculate remaining time based on the ratio of remaining distance to total route distance
+        let remainingTime = route.expectedTravelTime * (remainingDistance / route.distance)
+        
+        return (remainingDistance, remainingTime)
     }
     
     private func findClosestPoint(location: CLLocation, onRoute polyline: MKPolyline) -> MKMapPoint {
@@ -194,66 +300,6 @@ class RouteManager: NSObject, MKMapViewDelegate {
         )
     }
     
-    private func updateCurrentStep(location: CLLocation, progress: inout RouteProgress) {
-        let currentStep = progress.currentStep
-        let points = Array(UnsafeBufferPointer(start: currentStep.polyline.points(), count: currentStep.polyline.pointCount))
-        let stepEndPoint = CLLocation(
-            latitude: points.last!.coordinate.latitude,
-            longitude: points.last!.coordinate.longitude
-        )
-        
-        if location.distance(from: stepEndPoint) < 20 { // TODO: Tune
-            if progress.currentStepIndex < progress.route.steps.count - 1 {
-                progress.currentStepIndex += 1
-                onStepUpdated?(createNavigationStep(from: progress))
-            }
-        }
-    }
-
-    private func updateRemainingProgress(location: CLLocation, progress: inout RouteProgress) {
-        let remainingSteps = progress.route.steps.suffix(from: progress.currentStepIndex)
-        
-        let points = Array(UnsafeBufferPointer(
-            start: progress.currentStep.polyline.points(),
-            count: progress.currentStep.polyline.pointCount
-        ))
-        
-        // Calculate remaining distance using closest point to current location
-        let closestPoint = findClosestPoint(location: location, onRoute: progress.currentStep.polyline)
-        let distanceToStepEnd = location.distance(from: CLLocation(
-            latitude: points[points.count - 1].coordinate.latitude,
-            longitude: points[points.count - 1].coordinate.longitude
-        ))
-        
-        // Calculate remaining distance for all steps
-        let remainingStepsDistance = remainingSteps.dropFirst().reduce(0) { sum, step in
-            sum + step.distance
-        }
-        progress.distanceRemaining = distanceToStepEnd + remainingStepsDistance
-        
-        // Notify about distance update
-        onDistanceUpdated?(distanceToStepEnd)
-        
-        // Calculate remaining time based on average speed
-        let currentStepTime = progress.route.expectedTravelTime * (distanceToStepEnd / progress.currentStep.distance)
-        let remainingStepsTime = remainingSteps.dropFirst().reduce(0) { sum, step in
-            sum + (progress.route.expectedTravelTime * (step.distance / progress.route.distance))
-        }
-        progress.timeRemaining = currentStepTime + remainingStepsTime
-    }
-    
-    private func createNavigationStep(from progress: RouteProgress) -> NavigationStep {
-        return NavigationStep(
-            instruction: progress.currentStep.instructions,
-            notice: progress.currentStep.notice,
-            distance: progress.currentStep.distance,
-            transportType: progress.route.transportType,
-            eta: Date().addingTimeInterval(progress.timeRemaining),
-            remainingDistance: progress.distanceRemaining,
-            remainingTime: progress.timeRemaining
-        )
-    }
-
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
@@ -305,5 +351,9 @@ class RouteManager: NSObject, MKMapViewDelegate {
             return puckView
         }
         return nil
+    }
+    
+    deinit {
+        displayLink?.invalidate()
     }
 }

@@ -57,7 +57,6 @@ class NavigationInstructionView: UIView {
         stack.spacing = 2
         stack.addArrangedSubview(value)
         stack.addArrangedSubview(unit)
-        stack.isHidden = true
         return stack
     }
     
@@ -105,6 +104,8 @@ class NavigationInstructionView: UIView {
         label.text = "km"
         return label
     }()
+    
+    private var currentInstruction: String?
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -163,18 +164,118 @@ class NavigationInstructionView: UIView {
     }
     
     func update(with step: RouteManager.NavigationStep) {
-        UIView.animate(withDuration: 0.1, delay: 0, options: [.curveLinear, .beginFromCurrentState]) {
-            self.instructionImageView.image = self.iconFor(step: step)
-            self.updateDistance(step.distance)
+        let components = step.instruction.components(separatedBy: " onto ")
+        let newStreetName = components.count > 1 ? components[1] : step.instruction
+        
+        let shouldAnimate = currentInstruction != step.instruction
+        let isFirstUpdate = currentInstruction == nil
+        
+        currentInstruction = step.instruction
+        
+        statsStackView.isHidden = false
+        
+        if shouldAnimate && !isFirstUpdate {
+            let tempContainer = UIView()
+            containerView.addSubview(tempContainer)
+            tempContainer.translatesAutoresizingMaskIntoConstraints = false
             
-            let components = step.instruction.components(separatedBy: " onto ")
-            if components.count > 1 {
-                self.streetNameLabel.text = components[1]
-            } else {
-                self.streetNameLabel.text = step.instruction
+            let tempImageView = UIImageView(image: self.iconFor(step: step))
+            tempImageView.contentMode = .scaleAspectFit
+            tempImageView.tintColor = .white
+            
+            let tempDistanceLabel = UILabel()
+            tempDistanceLabel.text = formatDistance(step.distance)
+            tempDistanceLabel.textColor = .white
+            tempDistanceLabel.font = distanceLabel.font
+            tempDistanceLabel.adjustsFontSizeToFitWidth = true
+            tempDistanceLabel.minimumScaleFactor = 0.5
+            
+            let tempStreetLabel = UILabel()
+            tempStreetLabel.text = newStreetName
+            tempStreetLabel.textColor = streetNameLabel.textColor
+            tempStreetLabel.font = streetNameLabel.font
+            tempStreetLabel.textAlignment = .center
+            tempStreetLabel.numberOfLines = 1
+            
+            tempContainer.addSubview(tempImageView)
+            tempContainer.addSubview(tempDistanceLabel)
+            tempContainer.addSubview(tempStreetLabel)
+            
+            [tempImageView, tempDistanceLabel, tempStreetLabel].forEach {
+                $0.translatesAutoresizingMaskIntoConstraints = false
             }
             
-            self.updateStats(
+            NSLayoutConstraint.activate([
+                tempContainer.topAnchor.constraint(equalTo: containerView.topAnchor),
+                tempContainer.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                tempContainer.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                tempContainer.bottomAnchor.constraint(equalTo: streetNameLabel.bottomAnchor),
+                
+                tempImageView.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),
+                tempImageView.centerYAnchor.constraint(equalTo: instructionImageView.centerYAnchor),
+                tempImageView.widthAnchor.constraint(equalTo: instructionImageView.widthAnchor),
+                tempImageView.heightAnchor.constraint(equalTo: instructionImageView.heightAnchor),
+                
+                tempDistanceLabel.leadingAnchor.constraint(equalTo: distanceLabel.leadingAnchor),
+                tempDistanceLabel.centerYAnchor.constraint(equalTo: distanceLabel.centerYAnchor),
+                tempDistanceLabel.trailingAnchor.constraint(equalTo: distanceLabel.trailingAnchor),
+                
+                tempStreetLabel.leadingAnchor.constraint(equalTo: streetNameLabel.leadingAnchor),
+                tempStreetLabel.topAnchor.constraint(equalTo: streetNameLabel.topAnchor),
+                tempStreetLabel.trailingAnchor.constraint(equalTo: streetNameLabel.trailingAnchor)
+            ])
+            
+            tempContainer.transform = CGAffineTransform(translationX: containerView.frame.width, y: 0)
+            tempContainer.alpha = 0
+            
+            let currentViews = UIView()
+            containerView.insertSubview(currentViews, at: 0)
+            currentViews.translatesAutoresizingMaskIntoConstraints = false
+            
+            NSLayoutConstraint.activate([
+                currentViews.topAnchor.constraint(equalTo: containerView.topAnchor),
+                currentViews.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+                currentViews.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+                currentViews.bottomAnchor.constraint(equalTo: streetNameLabel.bottomAnchor)
+            ])
+            
+            [instructionImageView, distanceLabel, streetNameLabel].forEach {
+                currentViews.addSubview($0)
+            }
+            
+            UIView.animate(withDuration: 0.5, delay: 0, options: .curveEaseOut, animations: {
+                currentViews.transform = CGAffineTransform(translationX: -self.containerView.frame.width, y: 0)
+                currentViews.alpha = 0
+                
+                tempContainer.transform = .identity
+                tempContainer.alpha = 1
+            }) { _ in
+                self.instructionImageView.image = self.iconFor(step: step)
+                self.distanceLabel.text = self.formatDistance(step.distance)
+                self.streetNameLabel.text = newStreetName
+                
+                [self.instructionImageView, self.distanceLabel, self.streetNameLabel].forEach {
+                    self.containerView.addSubview($0)
+                    $0.transform = .identity
+                    $0.alpha = 1
+                }
+                
+                currentViews.removeFromSuperview()
+                tempContainer.removeFromSuperview()
+            }
+            
+            UIView.transition(with: statsStackView, duration: 0.5, options: .transitionCrossDissolve) {
+                self.updateStats(
+                    remainingTime: step.remainingTime,
+                    eta: step.eta,
+                    remainingDistance: step.remainingDistance
+                )
+            }
+        } else {
+            self.instructionImageView.image = self.iconFor(step: step)
+            self.distanceLabel.text = formatDistance(step.distance)
+            self.streetNameLabel.text = newStreetName
+            updateStats(
                 remainingTime: step.remainingTime,
                 eta: step.eta,
                 remainingDistance: step.remainingDistance
@@ -182,29 +283,11 @@ class NavigationInstructionView: UIView {
         }
     }
     
-    private func updateDistance(_ distance: CLLocationDistance) {
-        let text: String
-        if distance < 1000 {
-            text = "\(Int(distance))m"
-        } else {
-            text = String(format: "%.1f km", distance/1000)
-        }
-        
-        // Only update if text actually changed to prevent label flicker
-        if distanceLabel.text != text {
-            distanceLabel.text = text
-        }
-    }
-    
-    private func updateStats(remainingTime: TimeInterval, eta: Date, remainingDistance: CLLocationDistance) {
-        statsStackView.isHidden = false
-        
+    private func updateStats(remainingTime: TimeInterval, eta: Date, remainingDistance: CLLocationDistance) {        
         let minutes = Int(remainingTime / 60)
+        remainingTimeValue.superview?.isHidden = minutes <= 0
         if minutes > 0 {
             remainingTimeValue.text = "\(minutes)"
-            remainingTimeValue.superview?.isHidden = false
-        } else {
-            remainingTimeValue.superview?.isHidden = true
         }
         
         let formatter = DateFormatter()
@@ -212,6 +295,7 @@ class NavigationInstructionView: UIView {
         arrivalTimeValue.text = formatter.string(from: eta)
         arrivalTimeValue.superview?.isHidden = false
         
+        remainingDistanceValue.superview?.isHidden = remainingDistance <= 0
         if remainingDistance > 0 {
             if remainingDistance < 1000 {
                 remainingDistanceValue.text = "\(Int(remainingDistance))"
@@ -220,9 +304,6 @@ class NavigationInstructionView: UIView {
                 remainingDistanceValue.text = String(format: "%.1f", remainingDistance/1000)
                 remainingDistanceUnit.text = "km"
             }
-            remainingDistanceValue.superview?.isHidden = false
-        } else {
-            remainingDistanceValue.superview?.isHidden = true
         }
     }
     

@@ -40,12 +40,69 @@ class NavigationInstructionView: UIView {
         return label
     }()
     
-    private let remainingInfoLabel: UILabel = {
+    private let statsStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.spacing = 18
+        stack.distribution = .fillEqually 
+        stack.alignment = .center
+        stack.isHidden = true
+        return stack
+    }()
+    
+    private func createStatColumn(value: UILabel, unit: UILabel) -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.alignment = .center
+        stack.spacing = 2
+        stack.addArrangedSubview(value)
+        stack.addArrangedSubview(unit)
+        stack.isHidden = true
+        return stack
+    }
+    
+    private let remainingTimeValue: UILabel = {
         let label = UILabel()
         label.textColor = .white.withAlphaComponent(0.85)
-        label.font = .systemFont(ofSize: 15, weight: .medium)
-        label.textAlignment = .left
-        label.numberOfLines = 1
+        label.font = .systemFont(ofSize: 20, weight: .medium)
+        return label
+    }()
+    
+    private let remainingTimeUnit: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.7)
+        label.font = .systemFont(ofSize: 20, weight: .regular)
+        label.text = "min"
+        return label
+    }()
+    
+    private let arrivalTimeValue: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.85)
+        label.font = .systemFont(ofSize: 20, weight: .medium)
+        return label
+    }()
+    
+    private let arrivalTimeUnit: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.7)
+        label.font = .systemFont(ofSize: 20, weight: .regular) 
+        label.text = "Arriving"
+        return label
+    }()
+    
+    private let remainingDistanceValue: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.85)
+        label.font = .systemFont(ofSize: 20, weight: .medium)
+        return label
+    }()
+    
+    private let remainingDistanceUnit: UILabel = {
+        let label = UILabel()
+        label.textColor = .white.withAlphaComponent(0.7)
+        label.font = .systemFont(ofSize: 20, weight: .regular) 
+        label.text = "km"
         return label
     }()
     
@@ -63,13 +120,21 @@ class NavigationInstructionView: UIView {
         containerView.addSubview(instructionImageView)
         containerView.addSubview(distanceLabel)
         containerView.addSubview(streetNameLabel)
-        containerView.addSubview(remainingInfoLabel)
+        containerView.addSubview(statsStackView)
+        
+        let timeColumn = createStatColumn(value: remainingTimeValue, unit: remainingTimeUnit)
+        let arrivalColumn = createStatColumn(value: arrivalTimeValue, unit: arrivalTimeUnit)
+        let distanceColumn = createStatColumn(value: remainingDistanceValue, unit: remainingDistanceUnit)
+        
+        statsStackView.addArrangedSubview(timeColumn)
+        statsStackView.addArrangedSubview(arrivalColumn)
+        statsStackView.addArrangedSubview(distanceColumn)
         
         containerView.translatesAutoresizingMaskIntoConstraints = false
         instructionImageView.translatesAutoresizingMaskIntoConstraints = false
         distanceLabel.translatesAutoresizingMaskIntoConstraints = false
         streetNameLabel.translatesAutoresizingMaskIntoConstraints = false
-        remainingInfoLabel.translatesAutoresizingMaskIntoConstraints = false
+        statsStackView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             containerView.topAnchor.constraint(equalTo: topAnchor),
@@ -90,14 +155,13 @@ class NavigationInstructionView: UIView {
             streetNameLabel.topAnchor.constraint(equalTo: distanceLabel.bottomAnchor, constant: -4),
             streetNameLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             
-            remainingInfoLabel.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),
-            remainingInfoLabel.topAnchor.constraint(equalTo: streetNameLabel.bottomAnchor, constant: 4),
-            remainingInfoLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor)
+            statsStackView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: 32),
+            statsStackView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor, constant: -32),
+            statsStackView.topAnchor.constraint(equalTo: streetNameLabel.bottomAnchor, constant: 12)
         ])
     }
     
     func update(with step: RouteManager.NavigationStep) {
-        // Smoothly animate the distance change
         UIView.animate(withDuration: 0.1, delay: 0, options: [.curveLinear, .beginFromCurrentState]) {
             self.updateDistance(step.distance)
             
@@ -108,9 +172,11 @@ class NavigationInstructionView: UIView {
                 self.streetNameLabel.text = step.instruction
             }
             
-            let remainingDistance = self.formatDistance(step.remainingDistance)
-            let remainingTime = self.formatTime(step.remainingTime)
-            self.remainingInfoLabel.text = "\(remainingTime) (\(remainingDistance) remaining)"
+            self.updateStats(
+                remainingTime: step.remainingTime,
+                eta: step.eta,
+                remainingDistance: step.remainingDistance
+            )
         }
     }
     
@@ -128,8 +194,37 @@ class NavigationInstructionView: UIView {
         }
     }
     
+    private func updateStats(remainingTime: TimeInterval, eta: Date, remainingDistance: CLLocationDistance) {
+        statsStackView.isHidden = false
+        
+        let minutes = Int(remainingTime / 60)
+        if minutes > 0 {
+            remainingTimeValue.text = "\(minutes)"
+            remainingTimeValue.superview?.isHidden = false
+        } else {
+            remainingTimeValue.superview?.isHidden = true
+        }
+        
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        arrivalTimeValue.text = formatter.string(from: eta)
+        arrivalTimeValue.superview?.isHidden = false
+        
+        if remainingDistance > 0 {
+            if remainingDistance < 1000 {
+                remainingDistanceValue.text = "\(Int(remainingDistance))"
+                remainingDistanceUnit.text = "m"
+            } else {
+                remainingDistanceValue.text = String(format: "%.1f", remainingDistance/1000)
+                remainingDistanceUnit.text = "km"
+            }
+            remainingDistanceValue.superview?.isHidden = false
+        } else {
+            remainingDistanceValue.superview?.isHidden = true
+        }
+    }
+    
     private func iconFor(step: RouteManager.NavigationStep) -> UIImage? {
-        // Implement your logic to determine the appropriate icon based on the step
         return nil
     }
     

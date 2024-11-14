@@ -11,26 +11,36 @@ import MapKit
 class MapCameraManager {
     private let mapView: MKMapView
     private var isFollowingUser = true
-    private let navigationDistance: CLLocationDistance = 300 // TODO: Tune
-    private let navigationPitch: CGFloat = 65 // TODO: Tune
+    private let navigationDistance: CLLocationDistance = 500
+    private let navigationPitch: CGFloat = 20
+    private var lastHeading: Double = 0
     
     init(mapView: MKMapView) {
         self.mapView = mapView
     }
     
-    func updateCamera(for location: CLLocation, heading: CLHeading?) {
+    func updateCamera(for location: CLLocation, heading: Double?) {
         guard isFollowingUser else { return }
+        
+        if let heading = heading {
+            lastHeading = heading
+        }
         
         let camera = MKMapCamera(
             lookingAtCenter: location.coordinate,
             fromDistance: navigationDistance,
             pitch: navigationPitch,
-            heading: heading?.trueHeading ?? 0
+            heading: lastHeading
         )
         
-        UIView.animate(withDuration: 0.3, delay: 0, options: .curveEaseOut) {
-            self.mapView.camera = camera
-        }
+        UIView.animate(
+            withDuration: 1.0,
+            delay: 0,
+            options: [.curveLinear],
+            animations: {
+                self.mapView.camera = camera
+            }
+        )
     }
     
     func toggleFollowMode() {

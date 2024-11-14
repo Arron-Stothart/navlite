@@ -25,7 +25,7 @@ class NavigationInstructionView: UIView {
     private let distanceLabel: UILabel = {
         let label = UILabel()
         label.textColor = .white
-        label.font = .systemFont(ofSize: 48, weight: .bold)
+        label.font = .systemFont(ofSize: 96, weight: .bold)
         label.adjustsFontSizeToFitWidth = true
         label.minimumScaleFactor = 0.5
         return label
@@ -33,8 +33,9 @@ class NavigationInstructionView: UIView {
     
     private let streetNameLabel: UILabel = {
         let label = UILabel()
-        label.textColor = .white
+        label.textColor = .white.withAlphaComponent(0.85) 
         label.font = .systemFont(ofSize: 20, weight: .medium)
+        label.textAlignment = .center
         label.numberOfLines = 1
         return label
     }()
@@ -71,7 +72,7 @@ class NavigationInstructionView: UIView {
             instructionImageView.heightAnchor.constraint(equalToConstant: 48),
             
             distanceLabel.leadingAnchor.constraint(equalTo: instructionImageView.trailingAnchor, constant: 16),
-            distanceLabel.topAnchor.constraint(equalTo: containerView.topAnchor),
+            distanceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: -10),
             distanceLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             
             streetNameLabel.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),

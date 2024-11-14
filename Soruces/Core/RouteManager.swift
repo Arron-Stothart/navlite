@@ -10,7 +10,7 @@ import MapKit
 
 class RouteManager: NSObject, MKMapViewDelegate {
     private var currentRoute: MKRoute?
-    private var routeOverlay: MKPolyline?
+    var routeOverlay: MKPolyline?
     private let mapView: MKMapView
     private var currentStepIndex: Int = 0
     

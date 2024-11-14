@@ -17,9 +17,75 @@ class NavigationViewController: UIViewController {
     private var simulationTimer: Timer?
     private var simulationPoints: [CLLocationCoordinate2D] = []
     private var currentSimulationIndex = 0
-    private let topBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
-    private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+    private var topBlurView = VariableBlurView(style: .regular)
+    private var bottomBlurView = VariableBlurView(style: .regular)
     private let navigationInstructionView = NavigationInstructionView()
+    private let stopNavigationButton: UIButton = {
+        let button = UIButton(type: .system)
+        button.setTitle("Stop Navigation", for: .normal)
+        button.setTitleColor(.white, for: .normal)
+        button.titleLabel?.font = .systemFont(ofSize: 17, weight: .medium)
+        
+        let customRed = UIColor(red: 255/255, green: 16/255, blue: 29/255, alpha: 1.0)
+        button.backgroundColor = customRed
+        
+        button.layer.cornerRadius = 26
+        
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor(red: 255/255, green: 80/255, blue: 80/255, alpha: 0.3).cgColor
+        
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        button.layer.shadowOpacity = 0.2
+        button.layer.masksToBounds = false
+        
+        return button
+    }()
+
+    private let plusButtom: UIButton = {
+        let button = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
+        let image = UIImage(systemName: "plus", withConfiguration: config)
+        button.setImage(image, for: .normal)
+        button.tintColor = .white
+        
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        
+        button.layer.cornerRadius = 26
+        
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+        
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        button.layer.shadowOpacity = 0.2
+        
+        return button
+    }()
+
+    private let cameraButton: UIButton = {
+        let button = UIButton(type: .system)
+        let config = UIImage.SymbolConfiguration(pointSize: 16, weight: .medium)
+        let image = UIImage(systemName: "camera.fill", withConfiguration: config)
+        button.setImage(image, for: .normal)
+        button.tintColor = .white
+        
+        button.backgroundColor = UIColor.white.withAlphaComponent(0.1)
+        
+        button.layer.cornerRadius = 26
+        
+        button.layer.borderWidth = 1
+        button.layer.borderColor = UIColor.white.withAlphaComponent(0.3).cgColor
+        
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowRadius = 4
+        button.layer.shadowOpacity = 0.2
+        
+        return button
+    }()
 
     
     override func viewDidLoad() {
@@ -57,13 +123,13 @@ class NavigationViewController: UIViewController {
         setupBlurViews()
         
         // Add navigation instruction view to top blur view
-        topBlurView.contentView.addSubview(navigationInstructionView)
+        view.addSubview(navigationInstructionView)
         navigationInstructionView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            navigationInstructionView.topAnchor.constraint(equalTo: topBlurView.contentView.topAnchor, constant: 60),
-            navigationInstructionView.leadingAnchor.constraint(equalTo: topBlurView.contentView.leadingAnchor),
-            navigationInstructionView.trailingAnchor.constraint(equalTo: topBlurView.contentView.trailingAnchor),
+            navigationInstructionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            navigationInstructionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            navigationInstructionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             navigationInstructionView.heightAnchor.constraint(equalToConstant: 100)
         ])
     }
@@ -71,50 +137,60 @@ class NavigationViewController: UIViewController {
     private func setupBlurViews() {
         view.addSubview(topBlurView)
         view.addSubview(bottomBlurView)
+
+        view.backgroundColor = .clear
+        
+        view.addSubview(navigationInstructionView)
+        view.addSubview(stopNavigationButton)
+        view.addSubview(plusButtom)
+        view.addSubview(cameraButton)
+        plusButtom.translatesAutoresizingMaskIntoConstraints = false
+        cameraButton.translatesAutoresizingMaskIntoConstraints = false
         
         topBlurView.translatesAutoresizingMaskIntoConstraints = false
         bottomBlurView.translatesAutoresizingMaskIntoConstraints = false
+        stopNavigationButton.translatesAutoresizingMaskIntoConstraints = false
+        plusButtom.translatesAutoresizingMaskIntoConstraints = false
+        cameraButton.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             topBlurView.topAnchor.constraint(equalTo: view.topAnchor),
             topBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topBlurView.heightAnchor.constraint(equalToConstant: 200),
+            topBlurView.heightAnchor.constraint(equalToConstant: 300),
             
             bottomBlurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             bottomBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            bottomBlurView.heightAnchor.constraint(equalToConstant: 100)
+            bottomBlurView.heightAnchor.constraint(equalToConstant: 150),
+            
+            navigationInstructionView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            navigationInstructionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            navigationInstructionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            navigationInstructionView.heightAnchor.constraint(equalToConstant: 100),
+            
+            stopNavigationButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            stopNavigationButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            stopNavigationButton.widthAnchor.constraint(equalToConstant: 160),
+            stopNavigationButton.heightAnchor.constraint(equalToConstant: 52),
+            
+            plusButtom.centerYAnchor.constraint(equalTo: stopNavigationButton.centerYAnchor),
+            plusButtom.trailingAnchor.constraint(equalTo: stopNavigationButton.leadingAnchor, constant: -16),
+            plusButtom.widthAnchor.constraint(equalToConstant: 52),
+            plusButtom.heightAnchor.constraint(equalToConstant: 52),
+            
+            cameraButton.centerYAnchor.constraint(equalTo: stopNavigationButton.centerYAnchor),
+            cameraButton.leadingAnchor.constraint(equalTo: stopNavigationButton.trailingAnchor, constant: 16),
+            cameraButton.widthAnchor.constraint(equalToConstant: 52),
+            cameraButton.heightAnchor.constraint(equalToConstant: 52)
         ])
         
-        let topGradient = CAGradientLayer()
-        topGradient.colors = [
-            UIColor.white.cgColor,
-            UIColor.white.withAlphaComponent(0.8).cgColor,
-            UIColor.clear.cgColor
-        ]
-        topGradient.locations = [0.0, 0.4, 1.0]
-        topGradient.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
+        topBlurView.updateMasks(isTop: true)
+        bottomBlurView.updateMasks(isTop: false)
         
-        let bottomGradient = CAGradientLayer()
-        bottomGradient.colors = [
-            UIColor.clear.cgColor,
-            UIColor.white.withAlphaComponent(0.8).cgColor,
-            UIColor.white.cgColor
-        ]
-        bottomGradient.locations = [0.0, 0.6, 1.0]
-        bottomGradient.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
-        
-        let topMask = CALayer()
-        topMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
-        topMask.addSublayer(topGradient)
-        
-        let bottomMask = CALayer()
-        bottomMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
-        bottomMask.addSublayer(bottomGradient)
-        
-        topBlurView.layer.mask = topMask
-        bottomBlurView.layer.mask = bottomMask
+        stopNavigationButton.addTarget(self, action: #selector(stopNavigationTapped), for: .touchUpInside)
+        plusButtom.addTarget(self, action: #selector(plusButtomTapped), for: .touchUpInside)
+        cameraButton.addTarget(self, action: #selector(cameraButtonTapped), for: .touchUpInside)
     }
     
     override func viewDidLayoutSubviews() {
@@ -124,12 +200,6 @@ class NavigationViewController: UIViewController {
            let bottomMask = bottomBlurView.layer.mask {
             topMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
             bottomMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
-            
-            if let topGradient = topMask.sublayers?.first as? CAGradientLayer,
-               let bottomGradient = bottomMask.sublayers?.first as? CAGradientLayer {
-                topGradient.frame = topMask.bounds
-                bottomGradient.frame = bottomMask.bounds
-            }
         }
     }
     
@@ -188,6 +258,18 @@ class NavigationViewController: UIViewController {
             }
         }
     }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        let blurStyle: UIBlurEffect.Style = traitCollection.userInterfaceStyle == .dark ? .dark : .regular
+        topBlurView.removeFromSuperview()
+        bottomBlurView.removeFromSuperview()
+        let newTopBlur = VariableBlurView(style: blurStyle)
+        let newBottomBlur = VariableBlurView(style: blurStyle)
+        topBlurView = newTopBlur
+        bottomBlurView = newBottomBlur
+        setupBlurViews()
+    }
     
     private func simulateNextLocation() {
         guard currentSimulationIndex < simulationPoints.count - 1 else {
@@ -229,6 +311,97 @@ class NavigationViewController: UIViewController {
         let radiansBearing = atan2(y, x)
         
         return radiansBearing.radiansToDegrees
+    }
+    
+    @objc private func stopNavigationTapped() {
+        simulationTimer?.invalidate()
+        simulationTimer = nil
+        
+        if let overlay = routeManager.routeOverlay {
+            mapView.removeOverlay(overlay)
+        }
+        
+        simulationPoints = []
+        currentSimulationIndex = 0
+        
+        dismiss(animated: true)
+    }
+
+    @objc private func plusButtomTapped() {
+        // TODO: Implement functionality
+    }
+
+    @objc private func cameraButtonTapped() {
+        // TODO: Implement functionality
+    }
+}
+
+class VariableBlurView: UIView {
+    private let blurLayers: [UIVisualEffectView]
+    
+    init(style: UIBlurEffect.Style, blurSteps: Int = 15) {
+        blurLayers = (0..<blurSteps).map { _ in
+            let effect = UIBlurEffect(style: style)
+            let view = UIVisualEffectView(effect: effect)
+            return view
+        }
+        
+        super.init(frame: .zero)
+        backgroundColor = .clear
+        isOpaque = false
+        
+        blurLayers.forEach { blurView in
+            addSubview(blurView)
+            blurView.backgroundColor = .clear
+            blurView.isOpaque = false
+            blurView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                blurView.topAnchor.constraint(equalTo: topAnchor),
+                blurView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                blurView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                blurView.bottomAnchor.constraint(equalTo: bottomAnchor)
+            ])
+        }
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    func updateMasks(isTop: Bool) {
+        let steps = blurLayers.count
+        blurLayers.enumerated().forEach { index, blurView in
+            let maskLayer = CAGradientLayer()
+            
+            let startPoint = CGFloat(index) / CGFloat(steps - 1)
+            let endPoint = CGFloat(index + 1) / CGFloat(steps - 1)
+            
+            if isTop {
+                maskLayer.colors = [UIColor.white.cgColor, UIColor.clear.cgColor]
+                maskLayer.locations = [0.0, 1.0]
+                maskLayer.startPoint = CGPoint(x: 0.5, y: startPoint)
+                maskLayer.endPoint = CGPoint(x: 0.5, y: endPoint)
+                
+                let intensity = (1.0 - startPoint) * 0.5
+                blurView.alpha = intensity
+            } else {
+                maskLayer.colors = [UIColor.clear.cgColor, UIColor.white.cgColor]
+                maskLayer.locations = [0.0, 1.0]
+                maskLayer.startPoint = CGPoint(x: 0.5, y: 1.0 - endPoint)
+                maskLayer.endPoint = CGPoint(x: 0.5, y: 1.0 - startPoint)
+                
+                let intensity = startPoint
+                blurView.alpha = (1.0 - intensity) * 0.5
+            }
+            
+            maskLayer.frame = bounds
+            blurView.layer.mask = maskLayer
+        }
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        blurLayers.forEach { $0.layer.mask?.frame = bounds }
     }
 }
 

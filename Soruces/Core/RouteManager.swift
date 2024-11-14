@@ -254,8 +254,13 @@ class RouteManager: NSObject, MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
-            renderer.strokeColor = .systemBlue
-            renderer.lineWidth = 8
+            
+            // Match Apple Maps colors
+            renderer.strokeColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)  // Blue similar to Apple Maps
+            renderer.lineWidth = 12
+            renderer.lineCap = .round
+            renderer.lineJoin = .round
+            
             return renderer
         }
         return MKOverlayRenderer(overlay: overlay)
@@ -265,24 +270,34 @@ class RouteManager: NSObject, MKMapViewDelegate {
         if annotation is MKUserLocation {
             let puckView = MKAnnotationView(annotation: annotation, reuseIdentifier: "userLocation")
             
-            // Create circular background
-            let circleView = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
-            circleView.backgroundColor = .systemBlue
-            circleView.layer.cornerRadius = 12
-            circleView.layer.borderWidth = 2
-            circleView.layer.borderColor = UIColor.white.cgColor
+            // Create outer blue circle (accuracy radius)
+            let outerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
+            outerCircle.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
+            outerCircle.layer.cornerRadius = 20
             
-            // Add shadow
-            circleView.layer.shadowColor = UIColor.black.cgColor
-            circleView.layer.shadowOffset = CGSize(width: 0, height: 2)
-            circleView.layer.shadowRadius = 4
-            circleView.layer.shadowOpacity = 0.3
+            // Create inner blue circle (location puck)
+            let innerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
+            innerCircle.backgroundColor = UIColor.systemBlue
+            innerCircle.layer.cornerRadius = 12
             
-            puckView.addSubview(circleView)
+            // Add white border to inner circle
+            innerCircle.layer.borderWidth = 3
+            innerCircle.layer.borderColor = UIColor.white.cgColor
             
-            // Center the circle in the annotation view
-            puckView.frame = CGRect(x: 0, y: 0, width: 24, height: 24)
-            circleView.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
+            // Add shadow to inner circle
+            innerCircle.layer.shadowColor = UIColor.black.cgColor
+            innerCircle.layer.shadowOffset = CGSize(width: 0, height: 2)
+            innerCircle.layer.shadowRadius = 4
+            innerCircle.layer.shadowOpacity = 0.25
+            
+            // Set up view hierarchy
+            puckView.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
+            puckView.addSubview(outerCircle)
+            puckView.addSubview(innerCircle)
+            
+            // Center both circles
+            outerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
+            innerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
             
             return puckView
         }

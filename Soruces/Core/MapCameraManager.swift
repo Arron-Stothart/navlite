@@ -12,7 +12,7 @@ class MapCameraManager {
     private let mapView: MKMapView
     private var isFollowingUser = true
     private let navigationDistance: CLLocationDistance = 500
-    private let navigationPitch: CGFloat = 20
+    private let navigationPitch: CGFloat = 45
     private var lastHeading: Double = 0
     
     init(mapView: MKMapView) {

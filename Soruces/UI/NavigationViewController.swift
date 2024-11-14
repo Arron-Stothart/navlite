@@ -17,6 +17,8 @@ class NavigationViewController: UIViewController {
     private var simulationTimer: Timer?
     private var simulationPoints: [CLLocationCoordinate2D] = []
     private var currentSimulationIndex = 0
+    private let topBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+    private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
 
     
     override func viewDidLoad() {
@@ -50,6 +52,73 @@ class NavigationViewController: UIViewController {
         mapView.isRotateEnabled = true
         mapView.mapType = .mutedStandard
         mapView.userTrackingMode = .followWithHeading
+        
+        setupBlurViews()
+    }
+    
+    private func setupBlurViews() {
+        view.addSubview(topBlurView)
+        view.addSubview(bottomBlurView)
+        
+        topBlurView.translatesAutoresizingMaskIntoConstraints = false
+        bottomBlurView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            topBlurView.topAnchor.constraint(equalTo: view.topAnchor),
+            topBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            topBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            topBlurView.heightAnchor.constraint(equalToConstant: 200),
+            
+            bottomBlurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            bottomBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            bottomBlurView.heightAnchor.constraint(equalToConstant: 100)
+        ])
+        
+        let topGradient = CAGradientLayer()
+        topGradient.colors = [
+            UIColor.white.cgColor,
+            UIColor.white.withAlphaComponent(0.8).cgColor,
+            UIColor.clear.cgColor
+        ]
+        topGradient.locations = [0.0, 0.4, 1.0]
+        topGradient.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
+        
+        let bottomGradient = CAGradientLayer()
+        bottomGradient.colors = [
+            UIColor.clear.cgColor,
+            UIColor.white.withAlphaComponent(0.8).cgColor,
+            UIColor.white.cgColor
+        ]
+        bottomGradient.locations = [0.0, 0.6, 1.0]
+        bottomGradient.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
+        
+        let topMask = CALayer()
+        topMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
+        topMask.addSublayer(topGradient)
+        
+        let bottomMask = CALayer()
+        bottomMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
+        bottomMask.addSublayer(bottomGradient)
+        
+        topBlurView.layer.mask = topMask
+        bottomBlurView.layer.mask = bottomMask
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        if let topMask = topBlurView.layer.mask,
+           let bottomMask = bottomBlurView.layer.mask {
+            topMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 200)
+            bottomMask.frame = CGRect(x: 0, y: 0, width: view.bounds.width, height: 100)
+            
+            if let topGradient = topMask.sublayers?.first as? CAGradientLayer,
+               let bottomGradient = bottomMask.sublayers?.first as? CAGradientLayer {
+                topGradient.frame = topMask.bounds
+                bottomGradient.frame = bottomMask.bounds
+            }
+        }
     }
     
     private func setupRouteManager() {
@@ -152,6 +221,8 @@ class NavigationViewController: UIViewController {
 struct NavigationViewController_Previews: PreviewProvider {
     static var previews: some View {
         NavigationViewControllerRepresentable()
+            .preferredColorScheme(.dark)
+            .ignoresSafeArea()
     }
 }
 

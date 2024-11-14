@@ -142,10 +142,11 @@ class NavigationInstructionView: UIView {
             containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             containerView.bottomAnchor.constraint(equalTo: bottomAnchor),
             
-            instructionImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-            instructionImageView.centerYAnchor.constraint(equalTo: distanceLabel.centerYAnchor),
-            instructionImageView.widthAnchor.constraint(equalToConstant: 48),
-            instructionImageView.heightAnchor.constraint(equalToConstant: 48),
+             instructionImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+        instructionImageView.centerYAnchor.constraint(equalTo: distanceLabel.centerYAnchor),
+        instructionImageView.widthAnchor.constraint(equalToConstant: 96), 
+        instructionImageView.heightAnchor.constraint(equalToConstant: 96), 
+        
             
             distanceLabel.leadingAnchor.constraint(equalTo: instructionImageView.trailingAnchor, constant: 16),
             distanceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: -10),
@@ -163,6 +164,7 @@ class NavigationInstructionView: UIView {
     
     func update(with step: RouteManager.NavigationStep) {
         UIView.animate(withDuration: 0.1, delay: 0, options: [.curveLinear, .beginFromCurrentState]) {
+            self.instructionImageView.image = self.iconFor(step: step)
             self.updateDistance(step.distance)
             
             let components = step.instruction.components(separatedBy: " onto ")
@@ -225,7 +227,48 @@ class NavigationInstructionView: UIView {
     }
     
     private func iconFor(step: RouteManager.NavigationStep) -> UIImage? {
-        return nil
+        let instruction = step.instruction.lowercased()
+        let imageName: String
+        
+        switch true {
+        case instruction.contains("turn right"):
+            imageName = "exit_right"
+        case instruction.contains("turn left"):
+            imageName = "exit_left"
+        case instruction.contains("sharp right"):
+            imageName = "sharp_right"
+        case instruction.contains("sharp left"):
+            imageName = "sharp_left"
+        case instruction.contains("slight right"), instruction.contains("bear right"):
+            imageName = "slight_right"
+        case instruction.contains("slight left"), instruction.contains("bear left"):
+            imageName = "slight_left"
+        case instruction.contains("merge") && instruction.contains("right"):
+            imageName = "merge_right"
+        case instruction.contains("merge") && instruction.contains("left"):
+            imageName = "merge_left"
+        case instruction.contains("merge"):
+            imageName = "merge"
+        case instruction.contains("fork") && instruction.contains("right"):
+            imageName = "fork_right"
+        case instruction.contains("fork") && instruction.contains("left"):
+            imageName = "fork_left"
+        case instruction.contains("fork"):
+            imageName = "fork"
+        case instruction.contains("u-turn") && instruction.contains("right"):
+            imageName = "uturn_right"
+        case instruction.contains("u-turn"):
+            imageName = "uturn_left"
+        case instruction.contains("arrive"), instruction.contains("destination"):
+            imageName = "flag"
+        case instruction.contains("continue"), instruction.contains("head"):
+            imageName = "continue_straight"
+        default:
+            imageName = "continue_straight"
+        }
+        
+        let bundle = Bundle(for: type(of: self))
+        return UIImage(named: imageName, in: bundle, compatibleWith: nil)
     }
     
     private func formatDistance(_ distance: CLLocationDistance) -> String {

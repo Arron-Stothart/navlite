@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		6B025CF62CE62FB2000D7813 /* NavigationInstructionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B025CF52CE62FB2000D7813 /* NavigationInstructionView.swift */; };
+		6B025D022CE6A461000D7813 /* NavigationIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B025D012CE6A461000D7813 /* NavigationIcons.xcassets */; };
 		6B2779412CE38966003C11D8 /* MapNavigationDemo.docc in Sources */ = {isa = PBXBuildFile; fileRef = 6B2779402CE38966003C11D8 /* MapNavigationDemo.docc */; };
 		6B2779472CE38966003C11D8 /* MapNavigationDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B27793C2CE38966003C11D8 /* MapNavigationDemo.framework */; };
 		6B27794C2CE38966003C11D8 /* MapNavigationDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B27794B2CE38966003C11D8 /* MapNavigationDemoTests.swift */; };
@@ -30,6 +31,7 @@
 
 /* Begin PBXFileReference section */
 		6B025CF52CE62FB2000D7813 /* NavigationInstructionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationInstructionView.swift; sourceTree = "<group>"; };
+		6B025D012CE6A461000D7813 /* NavigationIcons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = NavigationIcons.xcassets; sourceTree = "<group>"; };
 		6B27793C2CE38966003C11D8 /* MapNavigationDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MapNavigationDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B27793F2CE38966003C11D8 /* MapNavigationDemo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MapNavigationDemo.h; sourceTree = "<group>"; };
 		6B2779402CE38966003C11D8 /* MapNavigationDemo.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = MapNavigationDemo.docc; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 		6B2779322CE38966003C11D8 = {
 			isa = PBXGroup;
 			children = (
+				6B025D012CE6A461000D7813 /* NavigationIcons.xcassets */,
 				6B6477622CE38AC0000FEEB9 /* Soruces */,
 				6B27793E2CE38966003C11D8 /* MapNavigationDemo */,
 				6B27794A2CE38966003C11D8 /* MapNavigationDemoTests */,
@@ -234,6 +237,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6B025D022CE6A461000D7813 /* NavigationIcons.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

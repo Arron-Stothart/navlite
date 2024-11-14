@@ -19,6 +19,7 @@ class NavigationViewController: UIViewController {
     private var currentSimulationIndex = 0
     private let topBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
     private let bottomBlurView = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterial))
+    private let navigationInstructionView = NavigationInstructionView()
 
     
     override func viewDidLoad() {
@@ -47,13 +48,24 @@ class NavigationViewController: UIViewController {
         ])
         
         mapView.showsUserLocation = true
-        mapView.showsCompass = true
+        mapView.showsCompass = false
         mapView.isPitchEnabled = true
         mapView.isRotateEnabled = true
         mapView.mapType = .mutedStandard
         mapView.userTrackingMode = .followWithHeading
         
         setupBlurViews()
+        
+        // Add navigation instruction view to top blur view
+        topBlurView.contentView.addSubview(navigationInstructionView)
+        navigationInstructionView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            navigationInstructionView.topAnchor.constraint(equalTo: topBlurView.contentView.topAnchor, constant: 60),
+            navigationInstructionView.leadingAnchor.constraint(equalTo: topBlurView.contentView.leadingAnchor),
+            navigationInstructionView.trailingAnchor.constraint(equalTo: topBlurView.contentView.trailingAnchor),
+            navigationInstructionView.heightAnchor.constraint(equalToConstant: 100)
+        ])
     }
     
     private func setupBlurViews() {
@@ -123,9 +135,11 @@ class NavigationViewController: UIViewController {
     
     private func setupRouteManager() {
         routeManager.onStepUpdated = { [weak self] step in
-            print("Current instruction: \(step.instruction)")
-            print("Distance to next turn: \(step.formattedDistance)")
-            print("ETA: \(step.formattedETA)")
+            self?.navigationInstructionView.update(with: step)
+        }
+        
+        routeManager.onDistanceUpdated = { [weak self] distance in
+            self?.navigationInstructionView.updateDistance(distance)
         }
         
         routeManager.onRouteDeviation = { [weak self] in

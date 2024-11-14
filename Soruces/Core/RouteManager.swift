@@ -17,6 +17,7 @@ class RouteManager: NSObject, MKMapViewDelegate {
     var onRouteUpdated: ((MKRoute) -> Void)?
     var onStepUpdated: ((NavigationStep) -> Void)?
     var onRouteDeviation: (() -> Void)?
+    var onDistanceUpdated: ((CLLocationDistance) -> Void)?
     
     private var routeProgress: RouteProgress?
     private let routeCorridorWidth: Double = 25 // TODO: Tune
@@ -212,7 +213,6 @@ class RouteManager: NSObject, MKMapViewDelegate {
     private func updateRemainingProgress(location: CLLocation, progress: inout RouteProgress) {
         let remainingSteps = progress.route.steps.suffix(from: progress.currentStepIndex)
         
-        // Get the points array safely
         let points = Array(UnsafeBufferPointer(
             start: progress.currentStep.polyline.points(),
             count: progress.currentStep.polyline.pointCount
@@ -230,6 +230,9 @@ class RouteManager: NSObject, MKMapViewDelegate {
             sum + step.distance
         }
         progress.distanceRemaining = distanceToStepEnd + remainingStepsDistance
+        
+        // Notify about distance update
+        onDistanceUpdated?(distanceToStepEnd)
         
         // Calculate remaining time based on average speed
         let currentStepTime = progress.route.expectedTravelTime * (distanceToStepEnd / progress.currentStep.distance)

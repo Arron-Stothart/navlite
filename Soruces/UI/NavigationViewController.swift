@@ -14,9 +14,7 @@ class NavigationViewController: UIViewController {
     private lazy var cameraManager = MapCameraManager(mapView: mapView)
     private var currentRoute: MKRoute?
     private lazy var routeManager = RouteManager(mapView: mapView)
-    private var simulationTimer: Timer?
-    private var simulationPoints: [CLLocationCoordinate2D] = []
-    private var currentSimulationIndex = 0
+    private var routeSimulator: RouteSimulator?
     private var topBlurView = VariableBlurView(style: .regular)
     private var bottomBlurView = VariableBlurView(style: .regular)
     private let navigationInstructionView = NavigationInstructionView()
@@ -87,6 +85,7 @@ class NavigationViewController: UIViewController {
         return button
     }()
 
+    private var simulatedUserLocation: SimulatedUserLocation?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,12 +112,17 @@ class NavigationViewController: UIViewController {
             mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
         
-        mapView.showsUserLocation = true
-        mapView.showsCompass = false
+        mapView.showsUserLocation = false
         mapView.isPitchEnabled = true
         mapView.isRotateEnabled = true
         mapView.mapType = .mutedStandard
         mapView.userTrackingMode = .followWithHeading
+        
+        let london = CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)
+        simulatedUserLocation = SimulatedUserLocation(coordinate: london)
+        if let simulatedUserLocation = simulatedUserLocation {
+            mapView.addAnnotation(simulatedUserLocation)
+        }
         
         setupBlurViews()
         
@@ -239,19 +243,29 @@ class NavigationViewController: UIViewController {
         routeManager.calculateRoute(source: source, destination: destination) { [weak self] route in
             guard let self = self else { return }
             
-            // Extract route points for simulation
-            let points = route.polyline.points()
-            self.simulationPoints = (0..<route.polyline.pointCount).map {
-                points[$0].coordinate
+            // Create and start simulator
+            self.routeSimulator = RouteSimulator(route: route)
+            self.routeSimulator?.onLocationUpdated = { [weak self] location, heading in
+                guard let self = self else { return }
+                
+                // Update simulated user location
+                self.simulatedUserLocation?.coordinate = location.coordinate
+                self.simulatedUserLocation?.location = location
+                
+                let simulatedHeading = SimulatedCLHeading(trueHeading: heading)
+                self.simulatedUserLocation?.heading = simulatedHeading
+                
+                // Update map view's camera
+                self.mapView.camera = MKMapCamera(
+                    lookingAtCenter: location.coordinate,
+                    fromDistance: 500, // Match navigationDistance from MapCameraManager
+                    pitch: 45,        // Match navigationPitch from MapCameraManager
+                    heading: heading
+                )
+                
+                self.routeManager.updateProgress(for: location)
             }
-            
-            // Start simulation with faster updates
-            self.simulationTimer = Timer.scheduledTimer(
-                withTimeInterval: 0.5,  // Faster updates for smoother simulation
-                repeats: true
-            ) { [weak self] _ in
-                self?.simulateNextLocation()
-            }
+            self.routeSimulator?.start()
         }
     }
 
@@ -267,58 +281,13 @@ class NavigationViewController: UIViewController {
         setupBlurViews()
     }
     
-    private func simulateNextLocation() {
-        guard currentSimulationIndex < simulationPoints.count - 1 else {
-            simulationTimer?.invalidate()
-            return
-        }
-        
-        let currentCoordinate = simulationPoints[currentSimulationIndex]
-        let nextCoordinate = simulationPoints[currentSimulationIndex + 1]
-        
-        // Calculate heading between current and next point
-        let heading = calculateHeading(from: currentCoordinate, to: nextCoordinate)
-        
-        let location = CLLocation(
-            coordinate: currentCoordinate,
-            altitude: 0,
-            horizontalAccuracy: 10,
-            verticalAccuracy: 10,
-            timestamp: Date()
-        )
-        
-        // Instead of creating a CLHeading object, pass the heading value directly
-        cameraManager.updateCamera(for: location, heading: heading)
-        routeManager.updateProgress(for: location)
-        
-        currentSimulationIndex += 1
-    }
-    
-    private func calculateHeading(from: CLLocationCoordinate2D, to: CLLocationCoordinate2D) -> Double {
-        let lat1 = from.latitude.degreesToRadians
-        let lon1 = from.longitude.degreesToRadians
-        let lat2 = to.latitude.degreesToRadians
-        let lon2 = to.longitude.degreesToRadians
-        
-        let dLon = lon2 - lon1
-        
-        let y = sin(dLon) * cos(lat2)
-        let x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon)
-        let radiansBearing = atan2(y, x)
-        
-        return radiansBearing.radiansToDegrees
-    }
-    
     @objc private func stopNavigationTapped() {
-        simulationTimer?.invalidate()
-        simulationTimer = nil
+        routeSimulator?.stop()
+        routeSimulator = nil
         
         if let overlay = routeManager.routeOverlay {
             mapView.removeOverlay(overlay)
         }
-        
-        simulationPoints = []
-        currentSimulationIndex = 0
         
         dismiss(animated: true)
     }
@@ -425,4 +394,25 @@ struct NavigationViewControllerRepresentable: UIViewControllerRepresentable {
 private extension Double {
     var degreesToRadians: Double { self * .pi / 180 }
     var radiansToDegrees: Double { self * 180 / .pi }
+}
+
+class SimulatedCLHeading: CLHeading {
+    private let simulatedTrueHeading: CLLocationDirection
+    
+    override var trueHeading: CLLocationDirection {
+        return simulatedTrueHeading
+    }
+    
+    override var magneticHeading: CLLocationDirection {
+        return simulatedTrueHeading
+    }
+    
+    init(trueHeading: CLLocationDirection) {
+        self.simulatedTrueHeading = trueHeading
+        super.init()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }

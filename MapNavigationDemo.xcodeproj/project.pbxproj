@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		6B025CF62CE62FB2000D7813 /* NavigationInstructionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B025CF52CE62FB2000D7813 /* NavigationInstructionView.swift */; };
 		6B025D022CE6A461000D7813 /* NavigationIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 6B025D012CE6A461000D7813 /* NavigationIcons.xcassets */; };
+		6B025D042CE6BD92000D7813 /* SimulatedUserLocation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B025D032CE6BD92000D7813 /* SimulatedUserLocation.swift */; };
+		6B025D062CE6BFD3000D7813 /* RouteSimulator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B025D052CE6BFD3000D7813 /* RouteSimulator.swift */; };
 		6B2779412CE38966003C11D8 /* MapNavigationDemo.docc in Sources */ = {isa = PBXBuildFile; fileRef = 6B2779402CE38966003C11D8 /* MapNavigationDemo.docc */; };
 		6B2779472CE38966003C11D8 /* MapNavigationDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6B27793C2CE38966003C11D8 /* MapNavigationDemo.framework */; };
 		6B27794C2CE38966003C11D8 /* MapNavigationDemoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B27794B2CE38966003C11D8 /* MapNavigationDemoTests.swift */; };
@@ -32,6 +34,8 @@
 /* Begin PBXFileReference section */
 		6B025CF52CE62FB2000D7813 /* NavigationInstructionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationInstructionView.swift; sourceTree = "<group>"; };
 		6B025D012CE6A461000D7813 /* NavigationIcons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = NavigationIcons.xcassets; sourceTree = "<group>"; };
+		6B025D032CE6BD92000D7813 /* SimulatedUserLocation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SimulatedUserLocation.swift; sourceTree = "<group>"; };
+		6B025D052CE6BFD3000D7813 /* RouteSimulator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RouteSimulator.swift; sourceTree = "<group>"; };
 		6B27793C2CE38966003C11D8 /* MapNavigationDemo.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = MapNavigationDemo.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		6B27793F2CE38966003C11D8 /* MapNavigationDemo.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MapNavigationDemo.h; sourceTree = "<group>"; };
 		6B2779402CE38966003C11D8 /* MapNavigationDemo.docc */ = {isa = PBXFileReference; lastKnownFileType = folder.documentationcatalog; path = MapNavigationDemo.docc; sourceTree = "<group>"; };
@@ -131,6 +135,8 @@
 		6B6477642CE38AD3000FEEB9 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				6B025D052CE6BFD3000D7813 /* RouteSimulator.swift */,
+				6B025D032CE6BD92000D7813 /* SimulatedUserLocation.swift */,
 				6B6477662CE38B4F000FEEB9 /* LocationManager.swift */,
 				6B6477682CE38C52000FEEB9 /* MapCameraManager.swift */,
 				6B64776D2CE3921A000FEEB9 /* RouteManager.swift */,
@@ -261,6 +267,8 @@
 				6B2779412CE38966003C11D8 /* MapNavigationDemo.docc in Sources */,
 				6B6477692CE38C52000FEEB9 /* MapCameraManager.swift in Sources */,
 				6B025CF62CE62FB2000D7813 /* NavigationInstructionView.swift in Sources */,
+				6B025D062CE6BFD3000D7813 /* RouteSimulator.swift in Sources */,
+				6B025D042CE6BD92000D7813 /* SimulatedUserLocation.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

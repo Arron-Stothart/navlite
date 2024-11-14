@@ -25,9 +25,9 @@ class NavigationInstructionView: UIView {
     private let distanceLabel: UILabel = {
         let label = UILabel()
         label.textColor = .white
-        label.font = .systemFont(ofSize: 96, weight: .bold)
+        label.font = .systemFont(ofSize: 90, weight: .bold)
         label.adjustsFontSizeToFitWidth = true
-        label.minimumScaleFactor = 0.5
+        label.minimumScaleFactor = 1
         return label
     }()
     
@@ -106,6 +106,7 @@ class NavigationInstructionView: UIView {
     }()
     
     private var currentInstruction: String?
+    private var lastDisplayedDistance: CLLocationDistance = 0
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -143,14 +144,13 @@ class NavigationInstructionView: UIView {
             containerView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -16),
             containerView.bottomAnchor.constraint(equalTo: bottomAnchor),
             
-             instructionImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
-        instructionImageView.centerYAnchor.constraint(equalTo: distanceLabel.centerYAnchor),
-        instructionImageView.widthAnchor.constraint(equalToConstant: 96), 
-        instructionImageView.heightAnchor.constraint(equalToConstant: 96), 
-        
+            instructionImageView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            instructionImageView.centerYAnchor.constraint(equalTo: distanceLabel.centerYAnchor, constant: 4),
+            instructionImageView.widthAnchor.constraint(equalToConstant: 90),
+            instructionImageView.heightAnchor.constraint(equalToConstant: 90),
             
             distanceLabel.leadingAnchor.constraint(equalTo: instructionImageView.trailingAnchor, constant: 16),
-            distanceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: -10),
+            distanceLabel.topAnchor.constraint(equalTo: containerView.topAnchor, constant: -6),
             distanceLabel.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             
             streetNameLabel.leadingAnchor.constraint(equalTo: instructionImageView.leadingAnchor),
@@ -353,10 +353,24 @@ class NavigationInstructionView: UIView {
     }
     
     private func formatDistance(_ distance: CLLocationDistance) -> String {
-        if distance < 1000 {
-            return "\(Int(distance))m"
+        if shouldUpdateDistance(distance) {
+            lastDisplayedDistance = distance
+        }
+        
+        // Round to appropriate multiples
+        let roundedDistance: CLLocationDistance
+        if lastDisplayedDistance < 100 {
+            // For distances under 100m, round to nearest 5m
+            roundedDistance = round(lastDisplayedDistance / 5) * 5
+            return "\(Int(roundedDistance))m"
+        } else if lastDisplayedDistance < 1000 {
+            // For distances between 100m and 1km, round to nearest 10m
+            roundedDistance = round(lastDisplayedDistance / 10) * 10
+            return "\(Int(roundedDistance))m"
         } else {
-            return String(format: "%.1f km", distance/1000)
+            // For distances over 1km, round to nearest 100m before converting to km
+            roundedDistance = round(lastDisplayedDistance / 100) * 100
+            return String(format: "%.1f km", roundedDistance/1000)
         }
     }
     
@@ -369,5 +383,20 @@ class NavigationInstructionView: UIView {
         } else {
             return "\(minutes)min"
         }
+    }
+    
+    private func shouldUpdateDistance(_ newDistance: CLLocationDistance) -> Bool {
+        let difference = abs(newDistance - lastDisplayedDistance)
+        
+        let threshold: CLLocationDistance
+        if newDistance < 100 {
+            threshold = 5  // Update every 5m when close
+        } else if newDistance < 1000 {
+            threshold = 10 // Update every 10m when in hundreds
+        } else {
+            threshold = 100 // Update every 100m when over a kilometer
+        }
+        
+        return difference >= threshold
     }
 }

@@ -9,7 +9,7 @@ import Foundation
 import MapKit
 import SwiftUI // Temp for Preview
 
-class NavigationViewController: UIViewController {
+public class NavigationViewController: UIViewController {
     private let mapView = MKMapView()
     private lazy var cameraManager = MapCameraManager(mapView: mapView)
     private var currentRoute: MKRoute?
@@ -87,7 +87,7 @@ class NavigationViewController: UIViewController {
 
     private var simulatedUserLocation: SimulatedUserLocation?
     
-    override func viewDidLoad() {
+    public override func viewDidLoad() {
         super.viewDidLoad()
         setupMapView()
         setupRouteManager()
@@ -161,7 +161,7 @@ class NavigationViewController: UIViewController {
             topBlurView.topAnchor.constraint(equalTo: view.topAnchor),
             topBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             topBlurView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            topBlurView.heightAnchor.constraint(equalToConstant: 300),
+            topBlurView.heightAnchor.constraint(equalToConstant: 360),
             
             bottomBlurView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             bottomBlurView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
@@ -197,7 +197,7 @@ class NavigationViewController: UIViewController {
         cameraButton.addTarget(self, action: #selector(cameraButtonTapped), for: .touchUpInside)
     }
     
-    override func viewDidLayoutSubviews() {
+    public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
         if let topMask = topBlurView.layer.mask,
@@ -229,38 +229,37 @@ class NavigationViewController: UIViewController {
         cameraManager.updateCamera(for: currentLocation, heading: heading.trueHeading)
     }
     
-    func startDemoRoute() {
-        let source = CLLocationCoordinate2D(latitude: 51.5074, longitude: -0.1278)  // London
-        let destination = CLLocationCoordinate2D(latitude: 51.5194, longitude: -0.1270)  // King's Cross
+    public func startDemoRoute() {
+        // Old Port of Montreal
+        let source = CLLocationCoordinate2D(latitude: 45.5017, longitude: -73.5516)
+        // Mount Royal Lookout
+        let destination = CLLocationCoordinate2D(latitude: 45.5048, longitude: -73.5874)
         
         let region = MKCoordinateRegion(
             center: source,
-            latitudinalMeters: 2000,
-            longitudinalMeters: 2000
+            latitudinalMeters: 1000,
+            longitudinalMeters: 1000
         )
         mapView.setRegion(region, animated: false)
         
         routeManager.calculateRoute(source: source, destination: destination) { [weak self] route in
             guard let self = self else { return }
             
-            // Create and start simulator
-            self.routeSimulator = RouteSimulator(route: route)
+            self.routeSimulator = RouteSimulator(route: route, speed: 30)
+            
             self.routeSimulator?.onLocationUpdated = { [weak self] location, heading in
                 guard let self = self else { return }
                 
-                // Update simulated user location
                 self.simulatedUserLocation?.coordinate = location.coordinate
                 self.simulatedUserLocation?.location = location
                 
                 let simulatedHeading = SimulatedCLHeading(trueHeading: heading)
                 self.simulatedUserLocation?.heading = simulatedHeading
                 
-                // Update map view's camera
-                self.mapView.camera = MKMapCamera(
-                    lookingAtCenter: location.coordinate,
-                    fromDistance: 500, // Match navigationDistance from MapCameraManager
-                    pitch: 45,        // Match navigationPitch from MapCameraManager
-                    heading: heading
+                self.cameraManager.updateCamera(
+                    for: location,
+                    heading: heading,
+                    animated: true
                 )
                 
                 self.routeManager.updateProgress(for: location)
@@ -269,7 +268,7 @@ class NavigationViewController: UIViewController {
         }
     }
 
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
         let blurStyle: UIBlurEffect.Style = traitCollection.userInterfaceStyle == .dark ? .dark : .regular
         topBlurView.removeFromSuperview()
@@ -301,10 +300,10 @@ class NavigationViewController: UIViewController {
     }
 }
 
-class VariableBlurView: UIView {
-    private let blurLayers: [UIVisualEffectView]
+public class VariableBlurView: UIView {
+    public let blurLayers: [UIVisualEffectView]
     
-    init(style: UIBlurEffect.Style, blurSteps: Int = 15) {
+    public init(style: UIBlurEffect.Style, blurSteps: Int = 15) {
         blurLayers = (0..<blurSteps).map { _ in
             let effect = UIBlurEffect(style: style)
             let view = UIVisualEffectView(effect: effect)
@@ -329,11 +328,11 @@ class VariableBlurView: UIView {
         }
     }
     
-    required init?(coder: NSCoder) {
+    public required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     
-    func updateMasks(isTop: Bool) {
+    public func updateMasks(isTop: Bool) {
         let steps = blurLayers.count
         blurLayers.enumerated().forEach { index, blurView in
             let maskLayer = CAGradientLayer()
@@ -364,7 +363,7 @@ class VariableBlurView: UIView {
         }
     }
     
-    override func layoutSubviews() {
+    public override func layoutSubviews() {
         super.layoutSubviews()
         blurLayers.forEach { $0.layer.mask?.frame = bounds }
     }
@@ -378,17 +377,17 @@ struct NavigationViewController_Previews: PreviewProvider {
     }
 }
 
-struct NavigationViewControllerRepresentable: UIViewControllerRepresentable {
-    func makeUIViewController(context: Context) -> NavigationViewController {
+public struct NavigationViewControllerRepresentable: UIViewControllerRepresentable {
+    public init() {} 
+    public func makeUIViewController(context: Context) -> NavigationViewController {
         let vc = NavigationViewController()
-        // Start demo route after a short delay to ensure view is loaded
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             vc.startDemoRoute()
         }
         return vc
     }
     
-    func updateUIViewController(_ uiViewController: NavigationViewController, context: Context) {}
+    public func updateUIViewController(_ uiViewController: NavigationViewController, context: Context) {}
 }
 
 private extension Double {
@@ -396,23 +395,23 @@ private extension Double {
     var radiansToDegrees: Double { self * 180 / .pi }
 }
 
-class SimulatedCLHeading: CLHeading {
+public class SimulatedCLHeading: CLHeading {
     private let simulatedTrueHeading: CLLocationDirection
     
-    override var trueHeading: CLLocationDirection {
+    override public var trueHeading: CLLocationDirection {
         return simulatedTrueHeading
     }
     
-    override var magneticHeading: CLLocationDirection {
+    override public var magneticHeading: CLLocationDirection {
         return simulatedTrueHeading
     }
     
-    init(trueHeading: CLLocationDirection) {
+    public init(trueHeading: CLLocationDirection) {
         self.simulatedTrueHeading = trueHeading
         super.init()
     }
     
-    required init?(coder: NSCoder) {
+    required public init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 }

@@ -29,10 +29,6 @@ class RouteManager: NSObject, MKMapViewDelegate {
     private var liveProgress: LiveProgress?
     private var displayLink: CADisplayLink?
     
-    // Add new property to track traversed path
-    private var traversedPath: MKPolyline?
-    private var traversedCoordinates: [CLLocationCoordinate2D] = []
-    
     struct NavigationStep {
         let instruction: String
         let notice: String?
@@ -135,13 +131,6 @@ class RouteManager: NSObject, MKMapViewDelegate {
     }
 
     private func handleRouteDeviation() {
-        // Clear traversed path when rerouting
-        traversedCoordinates = []
-        if let existing = traversedPath {
-            mapView.removeOverlay(existing)
-            traversedPath = nil
-        }
-        
         guard let currentLocation = mapView.userLocation.location,
                 let route = currentRoute else { return }
         
@@ -157,47 +146,19 @@ class RouteManager: NSObject, MKMapViewDelegate {
     }
     
     private func displayRoute(_ route: MKRoute) {
-        // Remove existing overlays
         if let existing = routeOverlay {
-            mapView.removeOverlay(existing)
-        }
-        if let existing = traversedPath {
             mapView.removeOverlay(existing)
         }
         
         currentRoute = route
         routeOverlay = route.polyline
-        
-        // Add the main route first (so it appears below the traversed path)
         mapView.addOverlay(route.polyline)
-        
-        // Reset traversed path when displaying new route
-        traversedCoordinates = []
         
         onRouteUpdated?(route)
     }
     
     func updateProgress(for location: CLLocation) {
         guard let route = currentRoute else { return }
-        
-        // Add current location to traversed path
-        traversedCoordinates.append(location.coordinate)
-        
-        // Update traversed path overlay
-        if traversedCoordinates.count >= 2 {
-            if let existing = traversedPath {
-                mapView.removeOverlay(existing)
-            }
-            traversedPath = MKPolyline(coordinates: traversedCoordinates, count: traversedCoordinates.count)
-            if let traversedPath = traversedPath {
-                // Remove and re-add the main route to ensure it's below the traversed path
-                if let routeOverlay = routeOverlay {
-                    mapView.removeOverlay(routeOverlay)
-                    mapView.addOverlay(routeOverlay) // Add main route first
-                }
-                mapView.addOverlay(traversedPath)    // Add traversed path on top
-            }
-        }
         
         // Find closest point and check corridor
         let closestPoint = findClosestPoint(location: location, onRoute: route.polyline)
@@ -342,19 +303,10 @@ class RouteManager: NSObject, MKMapViewDelegate {
     func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
         if let polyline = overlay as? MKPolyline {
             let renderer = MKPolylineRenderer(polyline: polyline)
-            
-            if polyline === traversedPath {
-                // Dimmer blue for traversed path
-                renderer.strokeColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 0.5)
-            } else {
-                // Regular blue for remaining route
-                renderer.strokeColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)
-            }
-            
+            renderer.strokeColor = UIColor(red: 0.0, green: 0.478, blue: 1.0, alpha: 1.0)
             renderer.lineWidth = 12
             renderer.lineCap = .round
             renderer.lineJoin = .round
-            
             return renderer
         }
         return MKOverlayRenderer(overlay: overlay)
@@ -364,32 +316,26 @@ class RouteManager: NSObject, MKMapViewDelegate {
         if annotation is MKUserLocation {
             let puckView = MKAnnotationView(annotation: annotation, reuseIdentifier: "userLocation")
             
-            // Create outer blue circle (accuracy radius)
             let outerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
             outerCircle.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
             outerCircle.layer.cornerRadius = 20
             
-            // Create inner blue circle (location puck)
             let innerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
             innerCircle.backgroundColor = UIColor.systemBlue
             innerCircle.layer.cornerRadius = 12
             
-            // Add white border to inner circle
             innerCircle.layer.borderWidth = 3
             innerCircle.layer.borderColor = UIColor.white.cgColor
             
-            // Add shadow to inner circle
             innerCircle.layer.shadowColor = UIColor.black.cgColor
             innerCircle.layer.shadowOffset = CGSize(width: 0, height: 2)
             innerCircle.layer.shadowRadius = 4
             innerCircle.layer.shadowOpacity = 0.25
             
-            // Set up view hierarchy
             puckView.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
             puckView.addSubview(outerCircle)
             puckView.addSubview(innerCircle)
             
-            // Center both circles
             outerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
             innerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
             

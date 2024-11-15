@@ -10,16 +10,17 @@ class RouteSimulator {
     
     private var simulationPoints: [SimulationPoint] = []
     private let route: MKRoute
-    private let simulationSpeed: Double = 13.8 // ~50 km/h
-    private let pointSpacing: Double = 5 // 5 meters between points
+    private var simulationSpeed: Double = 30 
+    private let pointSpacing: Double = 5
     
     private var timer: CADisplayLink?
     private var startTime: CFTimeInterval = 0
     
     var onLocationUpdated: ((CLLocation, Double) -> Void)?
     
-    init(route: MKRoute) {
+    init(route: MKRoute, speed: Double = 30) {
         self.route = route
+        self.simulationSpeed = speed
         generateSimulationPoints()
     }
     

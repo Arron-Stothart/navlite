@@ -107,6 +107,7 @@ class NavigationInstructionView: UIView {
     
     private var currentInstruction: String?
     private var lastDisplayedDistance: CLLocationDistance = 0
+    private var lastDisplayedRemainingDistance: CLLocationDistance = 0
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -297,14 +298,36 @@ class NavigationInstructionView: UIView {
         
         remainingDistanceValue.superview?.isHidden = remainingDistance <= 0
         if remainingDistance > 0 {
-            if remainingDistance < 1000 {
-                remainingDistanceValue.text = "\(Int(remainingDistance))"
-                remainingDistanceUnit.text = "m"
-            } else {
-                remainingDistanceValue.text = String(format: "%.1f", remainingDistance/1000)
-                remainingDistanceUnit.text = "km"
+            if shouldUpdateRemainingDistance(remainingDistance) {
+                lastDisplayedRemainingDistance = remainingDistance
+                
+                if remainingDistance < 1000 {
+                    remainingDistanceValue.text = "\(Int(remainingDistance))"
+                    remainingDistanceUnit.text = "m"
+                } else {
+                    let roundedKm = round(remainingDistance / 100) / 10
+                    remainingDistanceValue.text = String(format: "%.1f", roundedKm)
+                    remainingDistanceUnit.text = "km"
+                }
             }
         }
+    }
+    
+    private func shouldUpdateRemainingDistance(_ newDistance: CLLocationDistance) -> Bool {
+        let difference = abs(newDistance - lastDisplayedRemainingDistance)
+        
+        let threshold: CLLocationDistance
+        if newDistance < 100 {
+            threshold = 5  // Update every 5m when close
+        } else if newDistance < 1000 {
+            threshold = 10 // Update every 10m when in hundreds
+        } else if newDistance < 10000 {
+            threshold = 100 // Update every 100m when between 1-10km
+        } else {
+            threshold = 500 // Update every 500m when over 10km
+        }
+        
+        return difference >= threshold
     }
     
     private func iconFor(step: RouteManager.NavigationStep) -> UIImage? {
@@ -340,8 +363,14 @@ class NavigationInstructionView: UIView {
             imageName = "uturn_right"
         case instruction.contains("u-turn"):
             imageName = "uturn_left"
-        case instruction.contains("arrive"), instruction.contains("destination"):
-            imageName = "flag"
+        case instruction.contains("arrive") || instruction.contains("destination"):
+            if instruction.contains("right") {
+                imageName = "arrive_right"
+            } else if instruction.contains("left") {
+                imageName = "arrive_left" 
+            } else {
+                imageName = "arrive_straight"
+            }
         case instruction.contains("continue"), instruction.contains("head"):
             imageName = "continue_straight"
         default:

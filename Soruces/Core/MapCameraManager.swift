@@ -11,7 +11,7 @@ import MapKit
 class MapCameraManager {
     private let mapView: MKMapView
     private var isFollowingUser = true
-    private let navigationDistance: CLLocationDistance = 500
+    private let navigationDistance: CLLocationDistance = 700
     private let navigationPitch: CGFloat = 60
     private var lastHeading: Double = 0
     private var targetHeading: Double = 0
@@ -86,12 +86,19 @@ class MapCameraManager {
         
         if animated {
             UIView.animate(
-                withDuration: 1.0,
+                withDuration: 0.3,
                 delay: 0,
-                options: [.curveLinear],
+                options: [.curveEaseOut],
                 animations: {
-                    // Only animate position and pitch, heading is handled separately
-                    self.mapView.camera.centerCoordinate = camera.centerCoordinate
+                    // Smoothly interpolate camera position
+                    let currentCenter = self.mapView.camera.centerCoordinate
+                    let targetCenter = camera.centerCoordinate
+                    
+                    // Calculate interpolated position
+                    let lat = currentCenter.latitude + (targetCenter.latitude - currentCenter.latitude) * 0.1
+                    let lon = currentCenter.longitude + (targetCenter.longitude - currentCenter.longitude) * 0.1
+                    
+                    self.mapView.camera.centerCoordinate = CLLocationCoordinate2D(latitude: lat, longitude: lon)
                     self.mapView.camera.pitch = camera.pitch
                     self.mapView.camera.altitude = camera.altitude
                 }

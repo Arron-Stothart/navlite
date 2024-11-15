@@ -10,8 +10,20 @@ import MapNavigationDemo
 
 struct ContentView: View {
     var body: some View {
-        NavigationViewControllerRepresentable()
-            .preferredColorScheme(.dark)
+        MainMapViewControllerRepresentable()
             .ignoresSafeArea()
     }
+}
+
+struct MainMapViewControllerRepresentable: UIViewControllerRepresentable {
+    func makeUIViewController(context: Context) -> MainMapViewController {
+        return MainMapViewController()
+    }
+    
+    func updateUIViewController(_ uiViewController: MainMapViewController, context: Context) {}
+}
+
+#Preview {
+    ContentView()
+        .ignoresSafeArea()
 }

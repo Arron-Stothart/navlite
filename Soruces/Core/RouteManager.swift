@@ -313,16 +313,21 @@ class RouteManager: NSObject, MKMapViewDelegate {
     }
 
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        // TODO: Implementing 3D map annotation using SCNView that can respond to camera rotation
+        
         if annotation is MKUserLocation {
             let puckView = MKAnnotationView(annotation: annotation, reuseIdentifier: "userLocation")
+            let pitchAngle: CGFloat = .pi/8
             
-            let outerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 40, height: 40))
+            let outerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 56, height: 56))
             outerCircle.backgroundColor = UIColor.systemBlue.withAlphaComponent(0.1)
-            outerCircle.layer.cornerRadius = 20
-            
-            let innerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 24))
+            outerCircle.layer.cornerRadius = 28
+            outerCircle.layer.transform = CATransform3DMakeRotation(pitchAngle, 1, 0, 0)
+
+            let innerCircle = UIView(frame: CGRect(x: 0, y: 0, width: 36, height: 36))
             innerCircle.backgroundColor = UIColor.systemBlue
-            innerCircle.layer.cornerRadius = 12
+            innerCircle.layer.cornerRadius = 18
+            innerCircle.layer.transform = CATransform3DMakeRotation(pitchAngle, 1, 0, 0)
             
             innerCircle.layer.borderWidth = 3
             innerCircle.layer.borderColor = UIColor.white.cgColor
@@ -331,13 +336,20 @@ class RouteManager: NSObject, MKMapViewDelegate {
             innerCircle.layer.shadowOffset = CGSize(width: 0, height: 2)
             innerCircle.layer.shadowRadius = 4
             innerCircle.layer.shadowOpacity = 0.25
+
+            let locationArrow = UIImageView(image: UIImage(systemName: "location.north.fill", withConfiguration: UIImage.SymbolConfiguration(weight: .heavy)))
+            locationArrow.tintColor = UIColor.white
+            locationArrow.frame = CGRect(x: 0, y: 0, width: 20, height: 20)
+            locationArrow.layer.transform = CATransform3DMakeRotation(pitchAngle, 1, 0, 0)
             
-            puckView.frame = CGRect(x: 0, y: 0, width: 40, height: 40)
+            puckView.frame = CGRect(x: 0, y: 0, width: 56, height: 56)
             puckView.addSubview(outerCircle)
             puckView.addSubview(innerCircle)
+            puckView.addSubview(locationArrow)
             
             outerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
             innerCircle.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2)
+            locationArrow.center = CGPoint(x: puckView.frame.width / 2, y: puckView.frame.height / 2 - 1.5)
             
             return puckView
         }

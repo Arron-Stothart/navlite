@@ -102,15 +102,30 @@ public class NavigationViewController: UIViewController {
     }
     
     private func setupMapView() {
-        view.addSubview(mapView)
+        let mapContainer = UIView()
+        view.addSubview(mapContainer)
+        mapContainer.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            mapContainer.topAnchor.constraint(equalTo: view.topAnchor, constant: -80), 
+            mapContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            mapContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            mapContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant:  80)
+        ])
+        
+        // Add mapView to the container
+        mapContainer.addSubview(mapView)
         mapView.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
-            mapView.topAnchor.constraint(equalTo: view.topAnchor),
-            mapView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            mapView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            mapView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            mapView.topAnchor.constraint(equalTo: mapContainer.topAnchor),
+            mapView.leadingAnchor.constraint(equalTo: mapContainer.leadingAnchor),
+            mapView.trailingAnchor.constraint(equalTo: mapContainer.trailingAnchor),
+            mapView.bottomAnchor.constraint(equalTo: mapContainer.bottomAnchor)
         ])
+        
+        // Apply transform to shift the map up
+        mapContainer.transform = CGAffineTransform(translationX: 0, y: 80) 
         
         mapView.showsUserLocation = false
         mapView.isPitchEnabled = true
